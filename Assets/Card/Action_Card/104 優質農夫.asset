@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc285dae22c88ca4ebffd558c2723b65, type: 3}
+  m_Name: "104 \u512A\u8CEA\u8FB2\u592B"
+  m_EditorClassIdentifier: 
+  card:
+    Name: "\u512A\u8CEA\u8FB2\u592B"
+    description: "\u672C\u56DE\u5408\u6536\u6210\u4F5C\u7269\r\n     \u7684\u91D1\u984D+2\r\n"
+    cardImg: {fileID: 21300000, guid: 414e8500ef66302479bbb3886d160ca3, type: 3}
+    ID: 104
+    cardCount: 3
+    Action: 6
+    actionPower: 2
+    effect: 2
+    target: -2
+    selectType:
+      type: 0
+      targetCount: 0
+    turn: 0

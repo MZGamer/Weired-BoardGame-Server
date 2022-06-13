@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36be9a2ced4977b41a3bf5bd4c887137, type: 3}
+  m_Name: "302 \u9583\u5230\u8170"
+  m_EditorClassIdentifier: 
+  card:
+    Name: "\u9583\u5230\u8170"
+    description: "1 \u91CD\u50B7 \u4F11\u606F\u4E00\u56DE\n2~3 \u8170\u5F88\u75DB
+      -1 \u6536\u6210\u91D1\u984D\n4~5 \u53BB\u770B\u91AB\u751F -3\u91D1\u5E63\n6
+      \u516C\u72D7\u8170 \u7121\u4E8B\u767C\u751F"
+    cardImg: {fileID: 21300000, guid: c39f271a18bf3d84d89295308bfa6163, type: 3}
+    ID: 302
+    cardCount: 3
+    Action: 0
+    actionPower: 0
+    effect: 0
+    target: -2
+    selectType:
+      type: 0
+      targetCount: 0
+    rools:
+    - Action: 1
+      effectType: 0
+      min: 1
+      max: 1
+      power: 1
+    - Action: 6
+      effectType: 2
+      min: 2
+      max: 3
+      power: -1
+    - Action: 3
+      effectType: 0
+      min: 4
+      max: 5
+      power: -3
+    - Action: 0
+      effectType: 0
+      min: 6
+      max: 6
+      power: 0

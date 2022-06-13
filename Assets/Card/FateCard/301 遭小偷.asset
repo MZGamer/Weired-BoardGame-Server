@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36be9a2ced4977b41a3bf5bd4c887137, type: 3}
+  m_Name: "301 \u906D\u5C0F\u5077"
+  m_EditorClassIdentifier: 
+  card:
+    Name: "\u906D\u5C0F\u5077"
+    description: "1\uFF1A\u62632\u91D1\u5E63\n2~5\uFF1A\u62631\u91D1\u5E63\r\n6\uFF1A\u62630\u91D1\u5E63\r\n"
+    cardImg: {fileID: 21300000, guid: 30b8a5448776e3d4a9455f57a5464db6, type: 3}
+    ID: 301
+    cardCount: 2
+    Action: 3
+    actionPower: 0
+    effect: 0
+    target: -2
+    selectType:
+      type: 0
+      targetCount: 0
+    rools:
+    - Action: 3
+      effectType: 0
+      min: 1
+      max: 1
+      power: -2
+    - Action: 3
+      effectType: 0
+      min: 2
+      max: 5
+      power: -1
+    - Action: 3
+      effectType: 0
+      min: 6
+      max: 6
+      power: 0

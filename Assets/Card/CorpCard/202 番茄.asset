@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c87ae117e554814fbfde31b2c4f4f0c, type: 3}
+  m_Name: "202 \u756A\u8304"
+  m_EditorClassIdentifier: 
+  card:
+    Name: "\u756A\u8304"
+    description: "\u666E\u901A\u7684\u756A\u8304"
+    cardImg: {fileID: 21300000, guid: 92a8893927c9fe54bbc69f548dd328b7, type: 3}
+    ID: 202
+    cardCount: 0
+    reward: 0000000002000000030000000500000004000000
+    turn: 0
