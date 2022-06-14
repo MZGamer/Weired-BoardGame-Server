@@ -34,6 +34,8 @@ public class NetworkMenager : MonoBehaviour {
         gameOver = false;
         gameStart = false;
         Application.runInBackground = true;
+        udpClient.EnableBroadcast = true;
+        udpClient.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
         if (IP != "" && PORT != 0) {
             IPInputObj.text = IP + '\0';
             PortInputObj.text = PORT.ToString() + '\0';
@@ -175,14 +177,14 @@ public class NetworkMenager : MonoBehaviour {
     void listenMessage() {
 
         //IPEndPoint object will allow us to read datagrams sent from any source.
-        IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, PORT+1);
+        EndPoint server = new IPEndPoint(IPAddress.Any, PORT+1) as EndPoint;
         byte[] receiveBytes = new byte[2048];
         while (true) {
             try {
 
                 
                 // Blocks until a message returns on this socket from a remote host.
-                int chk = udpClient.Receive(receiveBytes);
+                int chk = udpClient.ReceiveFrom(receiveBytes, ref server);
 
                 if (chk <= 0)
                     continue;
@@ -206,13 +208,14 @@ public class NetworkMenager : MonoBehaviour {
     void sendMessage(string sending) {
         try {
             Byte[] sendBytes = Encoding.Unicode.GetBytes(sending);
-            for (int i=0;i<playerSocket.Count;i++) {
-                if (playerSocket[i] == null)
-                    continue;
-                IPEndPoint target = playerSocket[i].RemoteEndPoint as IPEndPoint;
-                target.Port = PORT + 1;
+            //for (int i=0;i<playerSocket.Count;i++) {
+                //if (playerSocket[i] == null)
+                    //continue;
+                //IPEndPoint target = playerSocket[i].RemoteEndPoint as IPEndPoint;
+                IPEndPoint target = new IPEndPoint(IPAddress.Broadcast, PORT + 1);
+                //target.Port = PORT + 1;
                 udpClient.SendTo(sendBytes, target);
-            }
+            //}
             Array.Clear(sendBytes, 0, sendBytes.Length);
         } catch (Exception e) {
             Debug.LogError(e.ToString());
