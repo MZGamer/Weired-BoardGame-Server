@@ -5,7 +5,7 @@ using UnityEngine;
  
  
  
-public class NewBehaviourScript : MonoBehaviour
+public class packageUnpacker : MonoBehaviour
 {
     const int MAXCARD = 100;
 
@@ -16,12 +16,12 @@ public class NewBehaviourScript : MonoBehaviour
     public List<PlayerStatus> player = new List<PlayerStatus>();
     public List<Package> pkgQueueView = new List<Package>();
     public static Queue<Package> pkgQueue = new Queue<Package>();
-    int turn = 0;
+    public int turn = 0;
 
-    bool askForCounter = false;
-    bool modifyEventCard = false;
-    Package waitForCounter; 
-    Package waitForRoll;
+    public bool askForCounter = false;
+    public bool modifyEventCard = false;
+    public Package waitForCounter; 
+    public Package waitForRoll;
 
     public Stack<int> actionCardDeck = new Stack<int>();
     public Stack<int> FateCardDeck = new Stack<int>();
@@ -96,6 +96,7 @@ public class NewBehaviourScript : MonoBehaviour
         {
             case ACTION.PLAYER_DISCONNECTED:
                 if(!NetworkMenager.gameStart) {
+                    Debug.Log(package.index);
                     player[package.index] = DisconnectPlayer;
                     package.playerStatuses = player;
                     NetworkMenager.sendingQueue.Enqueue(package);
@@ -311,7 +312,7 @@ public class NewBehaviourScript : MonoBehaviour
                 pkg.playerStatuses = player;
                 NetworkMenager.sendingQueue.Enqueue(pkg);
                 pkg = new Package(-1, ACTION.NEXT_PLAYER, 0, 0, false, player); //ÁÙ¨S§ï
-                NewBehaviourScript.pkgQueue.Enqueue(pkg);
+                packageUnpacker.pkgQueue.Enqueue(pkg);
                 break;
             case CARD_ACTION.GROWUP:
                 if (power < 0) {

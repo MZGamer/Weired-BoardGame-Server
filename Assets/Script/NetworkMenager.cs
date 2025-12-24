@@ -124,7 +124,7 @@ public class NetworkMenager : MonoBehaviour {
                 if (receiveNumber == 0) {
                     int disPlayer = playerSocket.IndexOf(readlist[i]);
                     Package disPkg = new Package(-1, ACTION.PLAYER_DISCONNECTED, disPlayer, 0);
-                    NewBehaviourScript.pkgQueue.Enqueue(disPkg);
+                    packageUnpacker.pkgQueue.Enqueue(disPkg);
                     readlist[i].Disconnect(false);
                     readlist[i].Close();
                     playerSocket[disPlayer] = null;
@@ -141,7 +141,7 @@ public class NetworkMenager : MonoBehaviour {
                         temp += json[k];
                     } else {
                         Debug.LogWarning("Package Get" + temp);
-                        NewBehaviourScript.pkgQueue.Enqueue(JsonUtility.FromJson<Package>(temp));
+                        packageUnpacker.pkgQueue.Enqueue(JsonUtility.FromJson<Package>(temp));
                         
                         temp = "";
                     }
