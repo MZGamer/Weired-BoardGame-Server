@@ -116,7 +116,6 @@ public class powerCard : Card {
 
 [System.Serializable]
 public class actionCard : powerCard {
-    public int turn;
 
 
 }

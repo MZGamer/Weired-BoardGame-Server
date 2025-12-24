@@ -64,17 +64,26 @@
     <Compile Include="Assets\Tests\EditMode\PackageUnpackerTests.cs" />
     <Compile Include="Assets\Class\PlayerStatus.cs" />
     <Compile Include="Assets\Class\EffectList.cs" />
+    <Compile Include="Assets\Struct\cardInfo.cs" />
     <Compile Include="Assets\Script\packageUnpacker.cs" />
+    <Compile Include="Assets\Class\Player.cs" />
     <Compile Include="Assets\Scriptable object\Fate_Card_Temp.cs" />
     <Compile Include="Assets\Class\Card.cs" />
     <Compile Include="Assets\Scriptable object\Event_Card_Temp.cs" />
     <Compile Include="Assets\Class\CardList.cs" />
     <Compile Include="Assets\Script\NetworkMenager.cs" />
+    <Compile Include="Assets\Class\ActionExecuter\actionExecuter.cs" />
     <Compile Include="Assets\Tests\EditMode\NewTestScript.cs" />
     <Compile Include="Assets\Class\Packge.cs" />
+    <Compile Include="Assets\Struct\fateCardInfo.cs" />
+    <Compile Include="Assets\Class\Farm.cs" />
+    <Compile Include="Assets\Struct\rollAndAction.cs" />
     <Compile Include="Assets\Scriptable object\Effect_Des_Temp.cs" />
+    <Compile Include="Assets\Struct\corpCardInfo.cs" />
     <Compile Include="Assets\Scriptable object\Action_Card_Temp.cs" />
     <Compile Include="Assets\Scriptable object\Corp_Card_Temp.cs" />
+    <Compile Include="Assets\Struct\playerStatus.cs" />
+    <Compile Include="Assets\Struct\powerCardInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
