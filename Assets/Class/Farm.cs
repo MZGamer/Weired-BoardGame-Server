@@ -21,6 +21,7 @@ public class Farm {
         this.corpCardID = corpCardID;
         corpInfo = plantedCorp;
     }
+<<<<<<< Updated upstream
     public bool grow() {
         turn++;
         if (turn >= 5) {
@@ -32,6 +33,11 @@ public class Farm {
     public bool timeBack() {
         turn--;
         if (turn < 0) {
+=======
+    public bool grow(int power = 1) {
+        turn+= power;
+        if (turn >= 5 || turn < 0) {
+>>>>>>> Stashed changes
             return true;
         }
         return false;

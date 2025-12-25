@@ -9,6 +9,7 @@ public enum ACTION {
     NEW_TURN,
     NEXT_PLAYER,
     CARD_ACTIVE,
+    DATA_UPDATE,
     ROLL_POINT,
     ASSIGN_PLAYER_ID,
     GET_NEW_CARD,
@@ -22,6 +23,7 @@ public class Package {
     public int index;
     public List<int> target;
     public List<PlayerStatus> playerStatuses;
+    public gameInfo game;
     public bool askCounter;
 
     public Package(int src, ACTION ACTION = ACTION.NULL, int index = -1, List<int> target = null, bool askCounter = false, List<PlayerStatus> playerStatuses = null) {
@@ -36,6 +38,15 @@ public class Package {
         this.src = src;
         this.ACTION = ACTION;
         this.playerStatuses = playerStatuses;
+        this.index = index;
+        this.target = new List<int>();
+        this.target.Add(target);
+        this.askCounter = askCounter;
+    }
+    public Package(int src, ACTION ACTION = ACTION.NULL, int index = -1, int target = 0, bool askCounter = false, gameInfo? game = null) {
+        this.src = src;
+        this.ACTION = ACTION;
+        this.game = game.Value;
         this.index = index;
         this.target = new List<int>();
         this.target.Add(target);

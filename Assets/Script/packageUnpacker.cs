@@ -314,7 +314,8 @@ public class packageUnpacker : MonoBehaviour
                 pkg = new Package(-1, ACTION.NEXT_PLAYER, 0, 0, false, player); //ÁÙ¨S§ï
                 packageUnpacker.pkgQueue.Enqueue(pkg);
                 break;
-            case CARD_ACTION.GROWUP:
+            case CARD_ACTION.GROWUP
+            :
                 if (power < 0) {
                     if (GuardedChk(pkg, pkg.target[0]))
                         return;
