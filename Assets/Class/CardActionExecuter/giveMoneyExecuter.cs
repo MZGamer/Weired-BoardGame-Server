@@ -3,9 +3,18 @@ using System.Collections.Generic;
 
 public class giveMoneyExecuter : actionExecuter
 {
-    public Package execute(ref gameInfo gameInfo, int power = 1, List<int> target = null, int index = 0) {
-        int targetPlayer = target[0];
-        gameInfo.playerList[targetPlayer].money += power;
-        return new Package(-1, ACTION.DATA_UPDATE, 0, 0, false, gameInfo);
+    public void execute(ref gameInfo gameInfo, ref Package pkg, int power = 1, List<int> target = null, int index = 0) {
+        foreach(int id in target) {
+            gameInfo.playerList[id].money += power;
+        }
+
+        pkg.playerData =   gameInfo.playerList;
+        NetworkMenager.sendingQueue.Enqueue(pkg);
+    }
+    public bool isNegative(int power) {
+        if(power <0)
+            return true;
+        else
+            return false;
     }
 }

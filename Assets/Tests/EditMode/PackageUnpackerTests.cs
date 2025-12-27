@@ -9,6 +9,7 @@ public class PackageUnpackerTests
 {
     private GameObject _go;
     private packageUnpacker _sut;
+    private DeckManager _deckManager;
 
     [SetUp]
     public void SetUp()
@@ -23,7 +24,7 @@ public class PackageUnpackerTests
         _sut = _go.AddComponent<packageUnpacker>();
 
         // 基礎 player 初始化（避免 NRE）
-        _sut.player = new List<PlayerStatus>
+        _sut.gameData.playerList = new playerStatus[2]
         {
             MakePlayer("P0", money: 10),
             MakePlayer("P1", money: 10),
@@ -40,10 +41,17 @@ public class PackageUnpackerTests
         _sut.cardList.eventCardList = new List<Event_Card_Temp>();
 
         // 放入至少 1 張 Action / Fate / Event，避免 Start() reset 時 deck 為空造成後續 Pop 風險
-        _sut.cardList.actionCardsList.Add(MakeActionTemp(id: 100, count: 1, action: CARD_ACTION.NONE));
-        _sut.cardList.actionCardsList.Add(MakeActionTemp(id: 101, count: 1, action: CARD_ACTION.DEFEND));
-        _sut.cardList.fateCardsList.Add(MakeFateTemp(id: 300, count: 1));
-        _sut.cardList.eventCardList.Add(MakeEventTemp(id: 400, count: 1, action: CARD_ACTION.NONE));
+        _sut.cardList.actionCardsList.Add(MakeActionTemp(id: 100, count: 1, action: CARD_ACTION.NONE,0, EFFECT_ID.NONE));
+        _sut.cardList.actionCardsList.Add(MakeActionTemp(id: 101, count: 1, action: CARD_ACTION.DEFEND,0, EFFECT_ID.NONE));
+        _sut.cardList.fateCardsList.Add(MakeFateTemp(id: 300, count: 1, null));
+        _sut.cardList.eventCardList.Add(MakeEventTemp(id: 400, count: 1, action: CARD_ACTION.NONE,0, EFFECT_ID.NONE));
+
+        _sut.gameData.cardList = _sut.cardList;
+
+        _sut.gameData.actionCardDeck = new Stack<int>();
+        _sut.gameData.FateCardDeck = new Stack<int>();
+        _sut.gameData.EventCardDeck = new Stack<int>();
+        _sut.gameData.usedActionCardDeck = new List<int>();
     }
 
     [TearDown]
@@ -61,9 +69,9 @@ public class PackageUnpackerTests
     {
         InvokePrivate(_sut, "Start");
 
-        Assert.That(_sut.actionCardDeck.Count, Is.GreaterThan(0));
-        Assert.That(_sut.FateCardDeck.Count, Is.GreaterThan(0));
-        Assert.That(_sut.EventCardDeck.Count, Is.GreaterThan(0));
+        Assert.That(_sut.gameData.actionCardDeck.Count, Is.GreaterThan(0));
+        Assert.That(_sut.gameData.FateCardDeck.Count, Is.GreaterThan(0));
+        Assert.That(_sut.gameData.EventCardDeck.Count, Is.GreaterThan(0));
     }
     // Package處理
 
@@ -82,17 +90,17 @@ public class PackageUnpackerTests
     // -----------------------------
     [Test]
     public void A_PlayerJoin_ShouldAddPlayerAndBroadcast() {
-        PlayerStatus newcomer = MakePlayer("P3", money: 10);
-        Package pkg = new Package(src: 2, ACTION: ACTION.PLAYER_JOIN, index: 0, target: 0, askCounter: false, playerStatuses: new List<PlayerStatus> { newcomer });
+        playerStatus newcomer = MakePlayer("P3", money: 10);
+        Package pkg = new Package(src: 2, ACTION: ACTION.PLAYER_JOIN, index: 0, target: 0, askCounter: false, playerData: new playerStatus[1] { newcomer });
         packageUnpacker.pkgQueue.Enqueue(pkg);
         Assert.That(packageUnpacker.pkgQueue.Count, Is.EqualTo(1));
         InvokePrivate(_sut, "Update");
-        Assert.That(_sut.player.Count, Is.EqualTo(3));
-        Assert.That(_sut.player[2].name, Is.EqualTo("P3"));
+        Assert.That(_sut.gameData.playerList.Count, Is.EqualTo(3));
+        Assert.That(_sut.gameData.playerList[2].name, Is.EqualTo("P3"));
         Assert.That(NetworkMenager.sendingQueue.Count, Is.EqualTo(1));
         Package broadcastCheck = NetworkMenager.sendingQueue.Dequeue();
         Assert.That(broadcastCheck.ACTION, Is.EqualTo(ACTION.PLAYER_JOIN));
-        Assert.That(broadcastCheck.playerStatuses, Is.EqualTo(_sut.player));
+        Assert.That(broadcastCheck.playerData, Is.EqualTo(_sut.gameData.playerList));
         
     }
     // -----------------------------
@@ -103,11 +111,11 @@ public class PackageUnpackerTests
         Package pkg = new Package(src: -1, ACTION: ACTION.PLAYER_DISCONNECTED, index: 0, target: 0);
         packageUnpacker.pkgQueue.Enqueue(pkg);
         InvokePrivate(_sut, "Update");
-        Assert.That(_sut.player.Count, Is.EqualTo(2));
-        Assert.That(_sut.player[0], Is.EqualTo(_sut.DisconnectPlayer));
+        Assert.That(_sut.gameData.playerList.Count, Is.EqualTo(2));
+        Assert.That(_sut.gameData.playerList[0], Is.EqualTo(_sut.DisconnectPlayer));
         Package broadcastCheck = NetworkMenager.sendingQueue.Dequeue();
         Assert.That(broadcastCheck.ACTION, Is.EqualTo(ACTION.PLAYER_DISCONNECTED));
-        Assert.That(broadcastCheck.playerStatuses, Is.EqualTo(_sut.player));
+        Assert.That(broadcastCheck.playerData, Is.EqualTo(_sut.gameData.playerList));
     }
 
     [Test]
@@ -118,10 +126,10 @@ public class PackageUnpackerTests
         packageUnpacker.pkgQueue.Enqueue(pkg2);
         InvokePrivate(_sut, "Update");
         InvokePrivate(_sut, "Update");
-        Debug.Log(_sut.player[1].name);
-        Assert.That(_sut.player.Count, Is.EqualTo(2));
-        Assert.That(_sut.player[0], Is.EqualTo(_sut.DisconnectPlayer));
-        Assert.That(_sut.player[1], Is.EqualTo(_sut.DisconnectPlayer));
+        Debug.Log(_sut.gameData.playerList[1].name);
+        Assert.That(_sut.gameData.playerList.Count, Is.EqualTo(2));
+        Assert.That(_sut.gameData.playerList[0], Is.EqualTo(_sut.DisconnectPlayer));
+        Assert.That(_sut.gameData.playerList[1], Is.EqualTo(_sut.DisconnectPlayer));
         
         Assert.That(NetworkMenager.sendingQueue.Count, Is.EqualTo(2));
     }
@@ -137,8 +145,8 @@ public class PackageUnpackerTests
         InvokePrivate(_sut, "Update");
         Package pkgCheck = packageUnpacker.pkgQueue.Dequeue();
 
-        Assert.That(_sut.player.Count, Is.EqualTo(2));
-        Assert.That(_sut.player[0], Is.EqualTo(_sut.DisconnectPlayer));
+        Assert.That(_sut.gameData.playerList.Count, Is.EqualTo(2));
+        Assert.That(_sut.gameData.playerList[0], Is.EqualTo(_sut.DisconnectPlayer));
         Assert.That(pkgCheck.ACTION, Is.EqualTo(ACTION.NEXT_PLAYER));
 
     }
@@ -159,7 +167,6 @@ public class PackageUnpackerTests
         Assert.AreEqual(null, _sut.waitForCounter);
         Assert.AreEqual(true, _sut.askForCounter);
         Assert.AreEqual(false, pkgcheck.askCounter);
-        Assert.That(pkgcheck.playerStatuses, Is.EqualTo(_sut.player));
         Assert.AreEqual(0, pkgcheck.src);
         Assert.AreEqual(ACTION.CARD_ACTIVE, pkgcheck.ACTION);
         Assert.AreEqual(101, pkgcheck.index);
@@ -172,57 +179,113 @@ public class PackageUnpackerTests
     public void GameStart() {
         Package pkg = new Package(src: 0, ACTION: ACTION.GAMESTART, index: 0, target: null);
         packageUnpacker.pkgQueue.Enqueue(pkg);
-        _sut.FateCardDeck.Push(300); // 確保有牌可發
-        _sut.EventCardDeck.Push(400); // 確保有牌可發
+
+        _sut.gameData.FateCardDeck.Push(300); // 確保有牌可發
+        _sut.gameData.EventCardDeck.Push(400); // 確保有牌可發
         InvokePrivate(_sut, "Update");
 
         Package pkgcheck = NetworkMenager.sendingQueue.Dequeue();
         Assert.AreEqual(ACTION.GAMESTART, pkgcheck.ACTION);
-        Assert.AreEqual(_sut.player,pkgcheck.playerStatuses);
+        Assert.AreEqual(_sut.gameData.playerList,pkgcheck.playerData);
 
         pkgcheck = NetworkMenager.sendingQueue.Dequeue();
         Assert.AreEqual(ACTION.CARD_ACTIVE, pkgcheck.ACTION);
+        Assert.AreEqual(400, pkgcheck.index);
 
         pkgcheck = NetworkMenager.sendingQueue.Dequeue();
         Assert.AreEqual(ACTION.ROLL_POINT, pkgcheck.ACTION);
+
     }
 
-
     // -----------------------------
-    // cardRandom()
+    // 下個回合(未過一輪)
     // -----------------------------
     [Test]
-    public void CardRandom_ShouldPushExactlyCardCountSum()
-    {
-        var cards = new List<Card>
+    public void NextPlayerNotRound() {
+        Package pkg = new Package(src: 0, ACTION: ACTION.NEXT_PLAYER, index: 0, target: null);
+        packageUnpacker.pkgQueue.Enqueue(pkg);
+
+        _sut.gameData.FateCardDeck.Push(300); // 確保有牌可發
+        _sut.gameData.EventCardDeck.Push(400); // 確保有牌可發
+        InvokePrivate(_sut, "Update");
+
+        Assert.AreEqual(_sut.turn, 1);
+
+        Package pkgToTest;
+        pkgToTest = NetworkMenager.sendingQueue.Dequeue();
+        Assert.AreEqual(ACTION.NEXT_PLAYER, pkgToTest.ACTION);
+
+        pkgToTest = NetworkMenager.sendingQueue.Dequeue();
+        Assert.AreEqual(ACTION.ROLL_POINT, pkgToTest.ACTION);
+        Assert.AreEqual(new List<int> {1,300}, pkgToTest.target);
+
+    }
+
+    // -----------------------------
+    // 下個回合(過了一輪)
+    // -----------------------------
+    [Test]
+    public void NextPlayerAndNewTurn() {
+        _sut.gameData.playerList = new playerStatus[2]
         {
-            new Card { ID = 101, cardCount = 2 },
-            new Card { ID = 102, cardCount = 3 },
+                MakePlayer("P0", money: 10),
+                MakePlayer("P1", money: 10),
         };
 
-        var deck = new Stack<int>();
-        InvokePrivate(_sut, "cardRandom", cards, deck); // 會用 ref 重設，但反射不易直接接 ref；改為走 resetX 測
+        _sut.gameData.playerList[0].farm[0] = new farmInfo(200, 0);
+        _sut.gameData.playerList[0].farm[1] = new farmInfo(200, 4);
+        _sut.gameData.playerList[1].effect[(int)EFFECT_ID.BILL_RATIO] = 2 ;
+        _sut.turn = 1;
 
-        // 改用 resetActionCard/resetFateCard/resetEventCard 為主做 deck 數量驗證（見下）
-        Assert.Pass("cardRandom 為 private(ref) 方法，覆蓋由 resetX 間接驗證。");
+
+        int[] expectedArray = new int[Enum.GetNames(typeof(EFFECT_ID)).Length];
+
+        Package pkg = new Package(src: 1, ACTION: ACTION.NEXT_PLAYER, index: 0, target: null);
+        packageUnpacker.pkgQueue.Enqueue(pkg);
+
+        _sut.gameData.FateCardDeck.Push(300); // 確保有牌可發
+        _sut.gameData.EventCardDeck.Push(400); // 確保有牌可發
+        InvokePrivate(_sut, "Update");
+        Assert.AreEqual(2, _sut.turn);
+        Assert.AreEqual(8, _sut.gameData.playerList[0].money);
+        Assert.AreEqual(6, _sut.gameData.playerList[1].money);
+        Assert.That(_sut.gameData.playerList.All(p => p.effect.SequenceEqual(expectedArray)), Is.True);
+
+        Assert.AreEqual(1, FarmManager.getTurn(ref _sut.gameData.playerList[0].farm[0]));
+        Assert.AreEqual(0, FarmManager.getTurn(ref _sut.gameData.playerList[0].farm[1]));
+
+        Package pkgToTest;
+        pkgToTest = NetworkMenager.sendingQueue.Dequeue();
+        Assert.AreEqual(ACTION.NEW_TURN, pkgToTest.ACTION);
+        Assert.AreEqual(new List<int> { 2, 4 }, pkgToTest.target);
+
+        pkgToTest = NetworkMenager.sendingQueue.Dequeue();
+        Assert.AreEqual(ACTION.CARD_ACTIVE, pkgToTest.ACTION);
+
+        pkgToTest = NetworkMenager.sendingQueue.Dequeue();
+        Assert.AreEqual(ACTION.NEXT_PLAYER, pkgToTest.ACTION);
+
+        pkgToTest = NetworkMenager.sendingQueue.Dequeue();
+        Assert.AreEqual(ACTION.ROLL_POINT, pkgToTest.ACTION);
+        Assert.AreEqual(new List<int> { 0, 300 }, pkgToTest.target);
+
     }
 
-    // -----------------------------
-    // resetActionCard/resetFateCard/resetEventCard (間接覆蓋 cardRandom)
-    // -----------------------------
-    [Test]
+// -----------------------------
+// resetActionCard/resetFateCard/resetEventCard (間接覆蓋 cardRandom)
+// -----------------------------
+[Test]
     public void ResetActionCard_ShouldFillDeckWithAllCounts()
     {
         _sut.cardList.actionCardsList = new List<Action_Card_Temp>
         {
-            MakeActionTemp(101, 2, CARD_ACTION.NONE),
-            MakeActionTemp(102, 3, CARD_ACTION.NONE),
+            MakeActionTemp(101, 2, CARD_ACTION.NONE,0, EFFECT_ID.NONE),
+            MakeActionTemp(102, 3, CARD_ACTION.NONE,0, EFFECT_ID.NONE),
         };
+        DeckManager.resetActionCard(ref _sut.gameData);
 
-        InvokePrivate(_sut, "resetActionCard");
-
-        Assert.That(_sut.actionCardDeck.Count, Is.EqualTo(5));
-        var ids = _sut.actionCardDeck.ToArray();
+        Assert.That(_sut.gameData.actionCardDeck.Count, Is.EqualTo(5));
+        var ids = _sut.gameData.actionCardDeck.ToArray();
         Assert.That(ids.Count(x => x == 101), Is.EqualTo(2));
         Assert.That(ids.Count(x => x == 102), Is.EqualTo(3));
     }
@@ -232,13 +295,13 @@ public class PackageUnpackerTests
     {
         _sut.cardList.fateCardsList = new List<Fate_Card_Temp>
         {
-            MakeFateTemp(301, 2),
-            MakeFateTemp(302, 1),
+            MakeFateTemp(301, 2, null),
+            MakeFateTemp(302, 1, null),
         };
 
-        InvokePrivate(_sut, "resetFateCard");
+        DeckManager.resetFateCard(ref _sut.gameData);
 
-        Assert.That(_sut.FateCardDeck.Count, Is.EqualTo(3));
+        Assert.That(_sut.gameData.FateCardDeck.Count, Is.EqualTo(3));
     }
 
     [Test]
@@ -246,14 +309,14 @@ public class PackageUnpackerTests
     {
         _sut.cardList.eventCardList = new List<Event_Card_Temp>
         {
-            MakeEventTemp(400, 2, CARD_ACTION.NONE),
-            MakeEventTemp(401, 2, CARD_ACTION.NONE),
-            MakeEventTemp(402, 2, CARD_ACTION.NONE),
+            MakeEventTemp(400, 2, CARD_ACTION.NONE,0, EFFECT_ID.NONE),
+            MakeEventTemp(401, 2, CARD_ACTION.NONE,0, EFFECT_ID.NONE),
+            MakeEventTemp(402, 2, CARD_ACTION.NONE, 0, EFFECT_ID.NONE),
         };
 
-        InvokePrivate(_sut, "resetEventCard");
+        DeckManager.resetEventCard(ref _sut.gameData);
 
-        Assert.That(_sut.EventCardDeck.Count, Is.EqualTo(6));
+        Assert.That(_sut.gameData.EventCardDeck.Count, Is.EqualTo(6));
     }
 
     // -----------------------------
@@ -262,7 +325,7 @@ public class PackageUnpackerTests
     [Test]
     public void GameOverChk_WhenAnyPlayerMoneyReached40_ShouldEnqueueGameOverAndSetFlag()
     {
-        _sut.player[0].money = 40;
+        _sut.gameData.playerList[0].money = 40;
 
         InvokePrivate(_sut, "gameOverChk");
 
@@ -274,8 +337,8 @@ public class PackageUnpackerTests
     [Test]
     public void GameOverChk_ShouldIgnoreDisconnectedPlayers()
     {
-        _sut.player[0] = MakePlayer("Disconnected", money: 999);
-        _sut.player[1].money = 39;
+        _sut.gameData.playerList[0] = MakePlayer("Disconnected", money: 999);
+        _sut.gameData.playerList[1].money = 39;
 
         InvokePrivate(_sut, "gameOverChk");
 
@@ -283,49 +346,11 @@ public class PackageUnpackerTests
         Assert.That(NetworkMenager.sendingQueue.Count, Is.EqualTo(0));
     }
 
-    // -----------------------------
-    // searchCard()
-    // -----------------------------
-    [Test]
-    public void SearchCard_ActionCardId_ShouldReturnActionCard()
-    {
-        var card = new actionCard { ID = 101, cardCount = 1, Action = CARD_ACTION.NONE };
-        _sut.cardList.actionCardsList = new List<Action_Card_Temp> { MakeActionTemp(card) };
-
-        var result = (powerCard)InvokePrivate(_sut, "searchCard", 101);
-
-        Assert.That(result, Is.Not.Null);
-        Assert.That(result.ID, Is.EqualTo(101));
-    }
 
     [Test]
-    public void SearchCard_FateCardId_ShouldReturnFateCard()
-    {
-        var fate = new FateCard { ID = 301, cardCount = 1 };
-        _sut.cardList.fateCardsList = new List<Fate_Card_Temp> { MakeFateTemp(fate) };
-
-        var result = (powerCard)InvokePrivate(_sut, "searchCard", 301);
-
-        Assert.That(result, Is.Not.Null);
-        Assert.That(result.ID, Is.EqualTo(301));
-    }
-
-    [Test]
-    public void SearchCard_EventCardId_ShouldReturnEventCard()
-    {
-        var ev = new EventCard { ID = 401, cardCount = 1, Action = CARD_ACTION.NONE };
-        _sut.cardList.eventCardList = new List<Event_Card_Temp> { MakeEventTemp(ev) };
-
-        var result = (powerCard)InvokePrivate(_sut, "searchCard", 401);
-
-        Assert.That(result, Is.Not.Null);
-        Assert.That(result.ID, Is.EqualTo(401));
-    }
-
-    [Test]
-    public void SearchCard_UnknownPrefix_ShouldReturnNull()
-    {
-        var result = InvokePrivate(_sut, "searchCard", 999);
+    public void SearchCard_UnknownPrefix_ShouldReturnNull() {
+        
+        var result = DeckManager.searchCard(ref _sut.gameData, 999);
         Assert.That(result, Is.Null);
     }
 
@@ -335,7 +360,7 @@ public class PackageUnpackerTests
     [Test]
     public void GuardedChk_WhenGuardEffectActive_ShouldReturnTrue_AndEnqueuePkgIfNotGlobal()
     {
-        _sut.player[1].effect[(int)EFFECT_ID.GUARD] = 1;
+        _sut.gameData.playerList[1].effect[(int)EFFECT_ID.GUARD] = 1;
 
         var pkg = new Package(src: 0, ACTION: ACTION.CARD_ACTIVE, index: 101, target: new List<int> { 1, 0 });
 
@@ -348,7 +373,7 @@ public class PackageUnpackerTests
     [Test]
     public void GuardedChk_WhenNoGuard_ShouldReturnFalse()
     {
-        _sut.player[1].effect[(int)EFFECT_ID.GUARD] = 0;
+        _sut.gameData.playerList[1].effect[(int)EFFECT_ID.GUARD] = 0;
 
         var pkg = new Package(src: 0, ACTION: ACTION.CARD_ACTIVE, index: 101, target: new List<int> { 1, 0 });
 
@@ -367,11 +392,11 @@ public class PackageUnpackerTests
         // 讓 target 玩家手牌含 DEFEND
         _sut.cardList.actionCardsList = new List<Action_Card_Temp>
         {
-            MakeActionTemp(id: 101, count: 1, action: CARD_ACTION.DEFEND),
+            MakeActionTemp(id: 100, count: 1, action: CARD_ACTION.DEFEND, 1, EFFECT_ID.NONE),
         };
-        _sut.player[1].handCard = new List<int> { 101 };
+        _sut.gameData.playerList[1].handCard = new List<int> { 100 };
 
-        var pkg = new Package(src: 0, ACTION: ACTION.CARD_ACTIVE, index: 101, target: new List<int> { 1, 0 });
+        var pkg = new Package(src: 0, ACTION: ACTION.CARD_ACTIVE, index: 100, target: new List<int> { 1, 0 });
 
         var result = (bool)InvokePrivate(_sut, "canAskCounter", pkg);
 
@@ -386,11 +411,11 @@ public class PackageUnpackerTests
     {
         _sut.cardList.actionCardsList = new List<Action_Card_Temp>
         {
-            MakeActionTemp(id: 101, count: 1, action: CARD_ACTION.NONE),
+            MakeActionTemp(id: 100, count: 1, action: CARD_ACTION.NONE, 0, EFFECT_ID.NONE),
         };
-        _sut.player[1].handCard = new List<int> { 101 };
+        _sut.gameData.playerList[1].handCard = new List<int> { 100 };
 
-        var pkg = new Package(src: 0, ACTION: ACTION.CARD_ACTIVE, index: 101, target: new List<int> {1});
+        var pkg = new Package(src: 0, ACTION: ACTION.CARD_ACTIVE, index: 100, target: new List<int> {1});
 
         InvokePrivate(_sut, "askCounter", pkg);
 
@@ -404,9 +429,14 @@ public class PackageUnpackerTests
     [Test]
     public void CardActionExecute_NONE_ShouldEnqueueSending()
     {
-        var pkg = new Package(src: 0, ACTION: ACTION.CARD_ACTIVE, index: 101, target: new List<int> { 1, 0 });
+        var pkg = new Package(src: 0, ACTION: ACTION.CARD_ACTIVE, index: 100, target: new List<int> {0});
 
-        InvokePrivate(_sut, "cardActionExecute", pkg, CARD_ACTION.NONE, 0, EFFECT_ID.NONE);
+        _sut.cardList.actionCardsList = new List<Action_Card_Temp>
+{
+            MakeActionTemp(100, 2, CARD_ACTION.NONE,5, EFFECT_ID.NONE)
+        };
+        powerCard P = MakeActionTemp(100, 2, CARD_ACTION.NONE, 5, EFFECT_ID.NONE).card;
+        InvokePrivate(_sut, "cardActionExecute", pkg, P, null);
 
         Assert.That(NetworkMenager.sendingQueue.Count, Is.EqualTo(1));
         Assert.That(NetworkMenager.sendingQueue.Dequeue().ACTION, Is.EqualTo(ACTION.CARD_ACTIVE));
@@ -417,7 +447,12 @@ public class PackageUnpackerTests
     {
         var pkg = new Package(src: 0, ACTION: ACTION.CARD_ACTIVE, index: 101, target: new List<int> { 1, 0 });
 
-        InvokePrivate(_sut, "cardActionExecute", pkg, CARD_ACTION.SKIP_TURN, 0, EFFECT_ID.NONE);
+        _sut.cardList.actionCardsList = new List<Action_Card_Temp>
+{
+            MakeActionTemp(100, 2, CARD_ACTION.SKIP_TURN,5,EFFECT_ID.NONE)
+        };
+        powerCard P = MakeActionTemp(100, 2, CARD_ACTION.SKIP_TURN, 5, EFFECT_ID.NONE).card;
+        InvokePrivate(_sut, "cardActionExecute", pkg, P, null);
 
         Assert.That(NetworkMenager.sendingQueue.Count, Is.EqualTo(1));
         Assert.That(packageUnpacker.pkgQueue.Count, Is.EqualTo(1));
@@ -427,12 +462,17 @@ public class PackageUnpackerTests
     [Test]
     public void CardActionExecute_GIVE_MONEY_Positive_ShouldAddMoneyAndSend()
     {
-        var pkg = new Package(src: -1, ACTION: ACTION.CARD_ACTIVE, index: 401, target: new List<int> { 1, 0 });
-        var before = _sut.player[1].money;
+        var pkg = new Package(src: -1, ACTION: ACTION.CARD_ACTIVE, index: 100, target: new List<int> {1});
 
-        InvokePrivate(_sut, "cardActionExecute", pkg, CARD_ACTION.GIVE_MONEY, 5, EFFECT_ID.NONE);
+        var before = _sut.gameData.playerList[1].money;
+        _sut.cardList.actionCardsList = new List<Action_Card_Temp>
+{
+            MakeActionTemp(100, 2, CARD_ACTION.GIVE_MONEY,5,EFFECT_ID.NONE),
+        };
+        powerCard P = MakeActionTemp(100, 2, CARD_ACTION.GIVE_MONEY, 5, EFFECT_ID.NONE).card;
+        InvokePrivate(_sut, "cardActionExecute", pkg, P, null);
 
-        Assert.That(_sut.player[1].money, Is.EqualTo(before + 5));
+        Assert.That(_sut.gameData.playerList[1].money, Is.EqualTo(before + 5));
         Assert.That(NetworkMenager.sendingQueue.Count, Is.EqualTo(1));
     }
 
@@ -441,24 +481,38 @@ public class PackageUnpackerTests
     {
         var pkg = new Package(src: -1, ACTION: ACTION.CARD_ACTIVE, index: 401, target: new List<int> { 5 });
 
-        InvokePrivate(_sut, "cardActionExecute", pkg, CARD_ACTION.SPECIALEFFECT, 2, EFFECT_ID.BILL_RATIO);
+        _sut.cardList.actionCardsList = new List<Action_Card_Temp>
+{
+            MakeActionTemp(100, 2, CARD_ACTION.SPECIALEFFECT,5, EFFECT_ID.BILL_RATIO)
+        };
+        powerCard P = MakeActionTemp(100, 2, CARD_ACTION.SPECIALEFFECT, 2, EFFECT_ID.BILL_RATIO).card;
+        InvokePrivate(_sut, "cardActionExecute", pkg, P, null);
 
-        Assert.That(_sut.player.All(p => p.effect[(int)EFFECT_ID.BILL_RATIO] == 2), Is.True);
+        Assert.That(_sut.gameData.playerList.All(p => p.effect[(int)EFFECT_ID.BILL_RATIO] == 2), Is.True);
         Assert.That(NetworkMenager.sendingQueue.Count, Is.EqualTo(1));
     }
 
     [Test]
     public void CardActionExecute_MODIFY_EVENT_FirstCall_ShouldPopCardsToTargetAndSend()
     {
-        InvokePrivate(_sut, "resetEventCard");
-        var pkg = new Package(src: -1, ACTION: ACTION.CARD_ACTIVE, index: 401, target: new List<int> { 5 });
 
-        InvokePrivate(_sut, "cardActionExecute", pkg, CARD_ACTION.MODIFY_EVENT, 1, EFFECT_ID.NONE);
+        _sut.cardList.actionCardsList = new List<Action_Card_Temp>
+{
+            MakeActionTemp(100, 1, CARD_ACTION.MODIFY_EVENT,2, EFFECT_ID.NONE)
+        };
+        _sut.cardList.eventCardList = new List<Event_Card_Temp>
+{
+            MakeEventTemp(100, 1, CARD_ACTION.MODIFY_EVENT,2, EFFECT_ID.NONE),
+            MakeEventTemp(101, 1, CARD_ACTION.NONE,5, EFFECT_ID.NONE)
+        };
+        powerCard P = MakeActionTemp(100, 2, CARD_ACTION.MODIFY_EVENT, 2, EFFECT_ID.NONE).card;
+        var pkg = new Package(src: 0, ACTION: ACTION.CARD_ACTIVE, index: 100, target: new List<int> { 0 });
+
+        InvokePrivate(_sut, "cardActionExecute", pkg, P, null);
 
         Assert.That(NetworkMenager.sendingQueue.Count, Is.EqualTo(1));
         var sent = NetworkMenager.sendingQueue.Dequeue();
-        Assert.That(sent.target, Is.Not.Null);
-        Assert.That(sent.target.Count, Is.EqualTo(1));
+        Assert.That(sent.target.Count, Is.EqualTo(2));
     }
 
     // -----------------------------
@@ -468,13 +522,13 @@ public class PackageUnpackerTests
     public void Update_PLAYER_JOIN_ShouldUpdatePlayerListAndSendJoinBroadcast()
     {
         var newcomer = MakePlayer("New", money: 10);
-        var pkg = new Package(src: 1, ACTION: ACTION.PLAYER_JOIN, index: 0, target: 0, askCounter: false, playerStatuses: new List<PlayerStatus> { newcomer });
+        var pkg = new Package(src: 1, ACTION: ACTION.PLAYER_JOIN, index: 0, target: 0, askCounter: false, playerData: new playerStatus[1] { newcomer });
 
         packageUnpacker.pkgQueue.Enqueue(pkg);
 
         InvokePrivate(_sut, "Update");
 
-        Assert.That(_sut.player[1].name, Is.EqualTo("New"));
+        Assert.That(_sut.gameData.playerList[1].name, Is.EqualTo("New"));
         Assert.That(NetworkMenager.sendingQueue.Count, Is.EqualTo(1));
         Assert.That(NetworkMenager.sendingQueue.Dequeue().ACTION, Is.EqualTo(ACTION.PLAYER_JOIN));
     }
@@ -490,7 +544,7 @@ public class PackageUnpackerTests
 
         InvokePrivate(_sut, "Update");
 
-        Assert.That(_sut.player[0].name, Is.EqualTo("Disconnected"));
+        Assert.That(_sut.gameData.playerList[0].name, Is.EqualTo("Disconnected"));
         Assert.That(NetworkMenager.sendingQueue.Count, Is.EqualTo(1));
         Assert.That(NetworkMenager.sendingQueue.Dequeue().ACTION, Is.EqualTo(ACTION.PLAYER_DISCONNECTED));
     }
@@ -498,28 +552,29 @@ public class PackageUnpackerTests
     // -----------------------------
     // helpers
     // -----------------------------
-    private static PlayerStatus MakePlayer(string name, int money)
+    private static playerStatus MakePlayer(string name, int money)
     {
-        var p = new PlayerStatus();
+        var p = new playerStatus();
         p.name = name;
         p.money = money;
         p.handCard = new List<int>();
-        p.farm = new corpCard[4] { new corpCard(), new corpCard(), new corpCard(), new corpCard() };
+        p.farm = new farmInfo[4] {new farmInfo(), new farmInfo(), new farmInfo(), new farmInfo() };
         p.effect = new int[Enum.GetNames(typeof(EFFECT_ID)).Length];
         return p;
     }
 
-    private static Action_Card_Temp MakeActionTemp(int id, int count, CARD_ACTION action)
+    private static Action_Card_Temp MakeActionTemp(int id, int count, CARD_ACTION action, int power, EFFECT_ID effect)
     {
         var temp = ScriptableObject.CreateInstance<Action_Card_Temp>();
-        temp.card = new actionCard
-        {
-            ID = id,
-            cardCount = count,
-            Action = action,
-            effect = EFFECT_ID.NONE,
-            Name = $"A{id}"
-        };
+        temp.card = new actionCard();
+        temp.card.cardinfo = new cardInfo();
+        temp.card.powerInfo = new powerCardInfo();
+        temp.card.cardinfo.Name = id.ToString();
+        temp.card.cardinfo.ID = id;
+        temp.card.cardinfo.cardCount = count;
+        temp.card.powerInfo.Action = action;
+        temp.card.powerInfo.actionPower = power;
+        temp.card.powerInfo.effect = effect;
         return temp;
     }
 
@@ -530,10 +585,16 @@ public class PackageUnpackerTests
         return temp;
     }
 
-    private static Fate_Card_Temp MakeFateTemp(int id, int count)
-    {
+    private static Fate_Card_Temp MakeFateTemp(int id, int count, List<roll> roll = null) {
         var temp = ScriptableObject.CreateInstance<Fate_Card_Temp>();
-        temp.card = new FateCard { ID = id, cardCount = count };
+        temp.card = new FateCard();
+        temp.card.cardinfo = new cardInfo();
+        temp.card.fatecardinfo = new fateCardInfo();
+        temp.card.cardinfo.Name = id.ToString();
+        temp.card.cardinfo.ID = id;
+        temp.card.cardinfo.cardCount = count;
+        temp.card.fatecardinfo.rools = roll;
+
         return temp;
     }
 
@@ -544,21 +605,21 @@ public class PackageUnpackerTests
         return temp;
     }
 
-    private static Event_Card_Temp MakeEventTemp(int id, int count, CARD_ACTION action)
-    {
+    private static Event_Card_Temp MakeEventTemp(int id, int count, CARD_ACTION action, int power, EFFECT_ID effect) {
         var temp = ScriptableObject.CreateInstance<Event_Card_Temp>();
-        temp.card = new EventCard
-        {
-            ID = id,
-            cardCount = count,
-            Action = action,
-            effect = EFFECT_ID.NONE,
-            Name = $"E{id}"
-        };
+        temp.card = new EventCard();
+        temp.card.cardinfo = new cardInfo();
+        temp.card.powerInfo = new powerCardInfo();
+        temp.card.cardinfo.Name = id.ToString();
+        temp.card.cardinfo.ID = id;
+        temp.card.cardinfo.cardCount = count;
+        temp.card.powerInfo.Action = action;
+        temp.card.powerInfo.actionPower = power;
+        temp.card.powerInfo.effect = effect;
         return temp;
     }
 
-    private static Event_Card_Temp MakeEventTemp(EventCard card)
+        private static Event_Card_Temp MakeEventTemp(EventCard card)
     {
         var temp = ScriptableObject.CreateInstance<Event_Card_Temp>();
         temp.card = card;

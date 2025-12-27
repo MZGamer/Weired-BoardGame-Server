@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public class modifyEvent_PopExecuter: actionExecuter
 {
-    public Package execute(ref gameInfo gameInfo, int power = 1, List<int> target = null, int index = 0) {
+    public void execute(ref gameInfo gameInfo, ref Package pkg, int power = 1, List<int> target = null, int index = 0) {
         List<int> card = new List<int>();
         for (int i = 0; i < power; i++) {
             if (gameInfo.EventCardDeck.Count == 0) {
@@ -11,6 +11,11 @@ public class modifyEvent_PopExecuter: actionExecuter
             }
             card.Add(gameInfo.EventCardDeck.Pop());
         }
-        return new Package(-1, ACTION.DATA_UPDATE, 0, 0, false, gameInfo);
+        pkg.target = card;
+        pkg.playerData = gameInfo.playerList;
+        NetworkMenager.sendingQueue.Enqueue(pkg);
+    }
+    public bool isNegative(int power) {
+            return false;
     }
 }

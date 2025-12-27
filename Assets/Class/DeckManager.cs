@@ -4,13 +4,13 @@ public class DeckManager
 {
     public const int MAXCARD = 100;
 
-    public static void cardRandom(List<cardInfo> needRandom, ref Stack<int> newDeck) {
+    public static void cardRandom(List<cardData> needRandom, ref Stack<int> newDeck) {
         System.Random random = new System.Random();
         List<int> indexList = new List<int>();
         for (int i = 0; i < needRandom.Count; i++) {
 
-            for (int k = 0; k < needRandom[i].cardCount; k++) {
-                indexList.Add(needRandom[i].ID);
+            for (int k = 0; k < needRandom[i].cardinfo.cardCount; k++) {
+                indexList.Add(needRandom[i].cardinfo.ID);
             }
         }
         newDeck = new Stack<int>();
@@ -21,28 +21,40 @@ public class DeckManager
 
         }
     }
+    public static void cardRandom(List<int> needRandom, ref Stack<int> newDeck) {
+        System.Random random = new System.Random();
+        newDeck = new Stack<int>();
+        while (needRandom.Count > 0) {
+            int index = random.Next(needRandom.Count);
+            newDeck.Push(needRandom[index]);
+            needRandom.RemoveAt(index);
+
+        }
+    }
     public static void resetActionCard(ref gameInfo game) {
-        List<cardInfo> needRandom = new List<cardInfo>();
+        List<cardData> needRandom = new List<cardData>();
         for (int i = 0; i < game.cardList.actionCardsList.Count; i++) {
             needRandom.Add(game.cardList.actionCardsList[i].card);
         }
         cardRandom(needRandom, ref game.actionCardDeck);
     }
     public static void resetFateCard(ref gameInfo game) {
-        List<cardInfo> needRandom = new List<Card>();
+        List<cardData> needRandom = new List<cardData>();
         for (int i = 0; i < game.cardList.fateCardsList.Count; i++) {
             needRandom.Add(game.cardList.fateCardsList[i].card);
         }
         cardRandom(needRandom, ref game.FateCardDeck);
     }
     public static void resetEventCard(ref gameInfo game) {
-        List<cardInfo> needRandom = new List<Card>();
+        List<cardData> needRandom = new List<cardData>();
         for (int i = 0; i < game.cardList.eventCardList.Count; i++) {
             needRandom.Add(game.cardList.eventCardList[i].card);
         }
         cardRandom(needRandom, ref game.EventCardDeck);
     }
-    public static cardInfo? searchCard(ref gameInfo gameInfo, int cardID) {
+    public static cardData searchCard(ref gameInfo gameInfo, int cardID) {
+        Debug.Log(cardID);
+        Debug.Log(gameInfo.cardList.actionCardsList.Count);
         int c = cardID / MAXCARD;
         switch (c) {
             case 1:

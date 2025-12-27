@@ -9,5 +9,5 @@ public struct gameInfo {
     public Stack<int> actionCardDeck;
     public Stack<int> FateCardDeck;
     public Stack<int> EventCardDeck;
-    public List<Card> usedActionCardDeck;
+    public List<int> usedActionCardDeck;
 }

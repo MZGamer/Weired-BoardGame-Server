@@ -2,14 +2,23 @@ using UnityEngine;
 using System.Collections.Generic;
 
 public class growUPExecuter : actionExecuter {
-    public Package execute(ref gameInfo gameInfo, int power = 1, List<int> target = null, int index = 0) {
-        int targetPlayer = target[0];
-        foreach(Farm farm in gameInfo.playerList[targetPlayer].farm) {
-            bool overflow =  farm.grow(power);
-            if (overflow) {
-                farm.resetFarm();
+    public void execute(ref gameInfo gameInfo, ref Package pkg, int power = 1, List<int> target = null, int index = 0) {
+        foreach(int id in target) {
+            var farmList = gameInfo.playerList[id].farm;
+            for (int i = 0; i < farmList.Length; i++) {
+                bool overflow = FarmManager.grow(ref farmList[i], power);
+                if (overflow) {
+                    FarmManager.resetFarm(ref farmList[i]);
+                }
             }
         }
-        return new Package(-1, ACTION.DATA_UPDATE,0,0,false,gameInfo);
+        pkg.playerData = gameInfo.playerList;
+        NetworkMenager.sendingQueue.Enqueue(pkg); 
+    }
+    public bool isNegative(int power) {
+        if (power < 0)
+            return true;
+        else
+            return false;
     }
 }

@@ -50,84 +50,32 @@ public struct roll {
     public int power;
 }
 
-public class Card {
-    public string Name;
-    [Multiline(5)]
-    public string description;
-    public Sprite cardImg;
-
-    [Header("1xx:機會 2xx:作物 3xx:命運 4xx:特效")]
-    public int ID;
-    public int cardCount;
+public class cardData {
+    public cardInfo cardinfo;
 }
 
 [System.Serializable]
-public class corpCard : Card {
-    public List<int> reward;
-    public int turn;
-
-    //收成
-    public int getReward() {
-        return reward[turn];
-    }
-    public void plant() {
-        turn = 0;
-    }
-    public bool grow() {
-        turn++;
-        if (turn >=5) {
-            return true;
-        }
-        return false;
-    }
-
-    public bool timeBack() {
-        turn--;
-        if(turn < 0) {
-            return true;
-        }
-        return false;
-    }
-    public int getTurn() {
-        return turn;
-    }
-
-    public corpCard seed() {
-        corpCard seed = new corpCard();
-        seed.ID = this.ID;
-        seed.Name = this.Name;
-        seed.cardImg = this.cardImg;
-        seed.description = this.description;
-        seed.reward = this.reward;
-
-        return seed;
-    }
+public class corpCard : cardData {
+    public corpCardInfo corpInfo;
 }
 
-public class powerCard : Card {
-    public CARD_ACTION Action;
-    public int actionPower;
-    public EFFECT_ID effect;
-    [Header("-2 : 自己, -1 : 需指定 , 5 : 全場")]
-    public int target;
-    public select selectType;
+public class powerCard : cardData {
+    public powerCardInfo powerInfo;
 
 }
 
 [System.Serializable]
 public class actionCard : powerCard {
 
-
 }
 
 [System.Serializable]
 public class FateCard : powerCard {
-    public List<roll> rools;
+    public fateCardInfo fatecardinfo;
 }
 
 
 
 [System.Serializable]
 public class EventCard : powerCard {
-
 }

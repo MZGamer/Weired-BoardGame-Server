@@ -1,0 +1,274 @@
+@startuml
+class cardData {
+    +cardInfo cardinfo
+}
+
+class corpCard {
+    +corpCardInfo corpInfo
+}
+
+class powerCard {
+    +powerCardInfo powerInfo
+}
+
+class actionCard {
+}
+
+class FateCard {
+    +fateCardInfo fatecardinfo
+}
+
+class EventCard {
+}
+
+cardData <|-- corpCard
+cardData <|-- powerCard
+powerCard <|-- actionCard
+powerCard <|-- FateCard
+powerCard <|-- EventCard
+
+struct cardInfo {
+    +string Name
+    +string description
+    +Sprite cardImg
+    +int ID
+    +int cardCount
+}
+
+struct corpCardInfo {
+    +List<int> reward
+    +int turn
+}
+
+struct powerCardInfo {
+    +CARD_ACTION Action
+    +int actionPower
+    +EFFECT_ID effect
+    +int target
+    +select selectType
+}
+
+struct fateCardInfo {
+    +List<roll> rools
+}
+
+struct select {
+    +SELECT_TYPE type
+    +int targetCount
+}
+
+struct roll {
+    +CARD_ACTION Action
+    +EFFECT_ID effectType
+    +int min
+    +int max
+    +int power
+}
+
+cardData --> cardInfo
+corpCard --> corpCardInfo
+powerCard --> powerCardInfo
+FateCard --> fateCardInfo
+powerCardInfo --> select
+fateCardInfo --> roll
+
+class CardList {
+    +List<Action_Card_Temp> actionCardsList
+    +List<Corp_Card_Temp> corpCardsList
+    +List<Fate_Card_Temp> fateCardsList
+    +List<Event_Card_Temp> eventCardList
+}
+
+class Corp_Card_Temp {
+    +corpCard card
+}
+class Event_Card_Temp {
+    +EventCard card
+}
+class Fate_Card_Temp {
+    +FateCard card
+}
+class Action_Card_Temp {
+    +actionCard card
+}
+
+CardList --> Corp_Card_Temp
+CardList --> Event_Card_Temp
+CardList --> Fate_Card_Temp
+CardList --> Action_Card_Temp
+
+Corp_Card_Temp --> corpCard
+Event_Card_Temp --> EventCard
+Fate_Card_Temp --> FateCard
+Action_Card_Temp --> actionCard
+
+struct gameInfo {
+    +playerStatus[] playerList
+    +CardList cardList
+    +EventCard eventCard
+    +Stack<int> actionCardDeck
+    +Stack<int> FateCardDeck
+    +Stack<int> EventCardDeck
+    +List<int> usedActionCardDeck
+}
+
+struct playerStatus {
+    +string name
+    +farmInfo[] farm
+    +List<int> handCard
+    +int money
+    +int[] effect
+}
+
+struct farmInfo {
+    +int corpCardID
+    +int turn
+}
+
+gameInfo --> playerStatus
+gameInfo --> CardList
+gameInfo --> EventCard
+playerStatus --> farmInfo
+
+class DeckManager {
+    +{static} void cardRandom(List<cardData> needRandom, ref Stack<int> newDeck)
+    +{static} void cardRandom(List<int> needRandom, ref Stack<int> newDeck)
+    +{static} void resetActionCard(ref gameInfo game)
+    +{static} void resetFateCard(ref gameInfo game)
+    +{static} void resetEventCard(ref gameInfo game)
+    +{static} cardData searchCard(ref gameInfo gameInfo, int cardID)
+}
+
+class FarmManager {
+    +{static} int getReward(ref gameInfo gameInfo, ref farmInfo farm)
+    +{static} void plant(ref farmInfo farm, int corpCardID)
+    +{static} bool grow(ref farmInfo farm, int power)
+    +{static} int getTurn(ref farmInfo farm)
+    +{static} void resetFarm(ref farmInfo farm)
+}
+
+class Package {
+    +int src
+    +ACTION ACTION
+    +int index
+    +List<int> target
+    +playerStatus[] playerData
+    +bool askCounter
+}
+
+Package --> playerStatus
+
+class NetworkMenager {
+    +List<Socket> playerSocket
+    +{static} Queue<Package> sendingQueue
+    +bool gameOver
+    +bool gameStart
+    +void goToOnline()
+    +void ServerRestart()
+}
+
+NetworkMenager --> Package
+
+class packageUnpacker {
+    +gameInfo gameData
+    +CardList cardList
+    +Package package
+    +EventCard eventCard
+    +{static} Queue<Package> pkgQueue
+    +void gameInit()
+    +void Update()
+}
+
+packageUnpacker --> gameInfo
+packageUnpacker --> CardList
+packageUnpacker --> Package
+packageUnpacker --> EventCard
+packageUnpacker ..> DeckManager
+packageUnpacker ..> FarmManager
+
+interface actionExecuter {
+    +void execute(ref gameInfo gameInfo, ref Package pkg, int power, List<int> target, int index)
+    +bool isNegative(int power)
+}
+
+class destoryExecuter
+class giveMoneyExecuter
+class growUPExecuter
+class modifyEvent_PopExecuter
+class noActionExecuter
+class setEffectExecuter
+class skipTurnExecuter
+class stealMoneyExecuter
+
+actionExecuter <|.. destoryExecuter
+actionExecuter <|.. giveMoneyExecuter
+actionExecuter <|.. growUPExecuter
+actionExecuter <|.. modifyEvent_PopExecuter
+actionExecuter <|.. noActionExecuter
+actionExecuter <|.. setEffectExecuter
+actionExecuter <|.. skipTurnExecuter
+actionExecuter <|.. stealMoneyExecuter
+
+packageUnpacker ..> actionExecuter : uses
+
+enum CARD_ACTION {
+    NONE
+    SKIP_TURN
+    GROWUP
+    GIVE_MONEY
+    DESTROY
+    DEFEND
+    SPECIALEFFECT
+    MODIFY_EVENT
+    STEAL_MONEY
+}
+
+enum EFFECT_ID {
+    NONE
+    BILL_RATIO
+    HARVEST_RATIO
+    CLOSE_SHOP
+    GUARD
+}
+
+enum SELECT_TYPE {
+    NONE
+    PLAYER
+    FARM
+    CARD
+}
+
+enum ACTION {
+    NULL
+    GAMESTART
+    PLAYER_JOIN
+    NEW_TURN
+    NEXT_PLAYER
+    CARD_ACTIVE
+    DATA_UPDATE
+    ROLL_POINT
+    ASSIGN_PLAYER_ID
+    GET_NEW_CARD
+    HARVEST
+    PLAYER_DISCONNECTED
+    GAMEOVER
+}
+
+class EffectDes {
+    +EFFECT_ID effectID
+    +string effectName
+    +string effectDescription
+}
+
+class EffectList {
+    +List<Effect_Des_Temp> effectDesList
+}
+
+class Effect_Des_Temp {
+    +EffectDes effectDes
+}
+
+EffectList --> Effect_Des_Temp
+Effect_Des_Temp --> EffectDes
+
+@enduml

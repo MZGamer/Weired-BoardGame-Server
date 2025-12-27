@@ -22,31 +22,21 @@ public class Package {
     public ACTION ACTION;
     public int index;
     public List<int> target;
-    public List<PlayerStatus> playerStatuses;
-    public gameInfo game;
+    public playerStatus[] playerData;
     public bool askCounter;
 
-    public Package(int src, ACTION ACTION = ACTION.NULL, int index = -1, List<int> target = null, bool askCounter = false, List<PlayerStatus> playerStatuses = null) {
+    public Package(int src, ACTION ACTION = ACTION.NULL, int index = -1, List<int> target = null, bool askCounter = false, playerStatus[] playerData = null) {
         this.src = src;
         this.ACTION = ACTION;
-        this.playerStatuses = playerStatuses;
+        this.playerData = playerData;
         this.index = index;
         this.target = target;
         this.askCounter = askCounter;
     }
-    public Package(int src, ACTION ACTION = ACTION.NULL, int index = -1, int target = 0, bool askCounter = false, List<PlayerStatus> playerStatuses = null) {
+    public Package(int src, ACTION ACTION = ACTION.NULL, int index = -1, int target = 0, bool askCounter = false, playerStatus[] playerData = null) {
         this.src = src;
         this.ACTION = ACTION;
-        this.playerStatuses = playerStatuses;
-        this.index = index;
-        this.target = new List<int>();
-        this.target.Add(target);
-        this.askCounter = askCounter;
-    }
-    public Package(int src, ACTION ACTION = ACTION.NULL, int index = -1, int target = 0, bool askCounter = false, gameInfo? game = null) {
-        this.src = src;
-        this.ACTION = ACTION;
-        this.game = game.Value;
+        this.playerData = playerData;
         this.index = index;
         this.target = new List<int>();
         this.target.Add(target);

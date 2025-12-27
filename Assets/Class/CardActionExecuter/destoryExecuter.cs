@@ -2,22 +2,29 @@ using UnityEngine;
 using System.Collections.Generic;
 
 public class destoryExecuter : actionExecuter {
-    public Package execute(ref gameInfo gameInfo, int power = 0, List<int> target = null, int index = -1) {
-        int targetPlayer = target[0];
-        if (target == null)
-            return new Package(-1, ACTION.DATA_UPDATE, 0, 0, false, gameInfo);
-
-        if (targetPlayer == 5) {
-            foreach(playerStatus player in gameInfo.playerList){
-                foreach (Farm farm in player.farm) {
-                    farm.resetFarm();
+    public void execute(ref gameInfo gameInfo, ref Package pkg, int power = 0, List<int> target = null, int index = -1) {
+        if(target.Count == 2) {
+            FarmManager.resetFarm(ref gameInfo.playerList[target[0]].farm[target[1]]);
+        } else {
+            foreach (int id in target) {
+                if (index == -1) {
+                    FarmManager.resetFarm(ref gameInfo.playerList[id].farm[index]);
+                } else {
+                    var farmList = gameInfo.playerList[id].farm;
+                    for (int i = 0; i < farmList.Length; i++) {
+                        bool overflow = FarmManager.grow(ref farmList[i], power);
+                        if (overflow) {
+                            FarmManager.resetFarm(ref farmList[i]);
+                        }
+                    }
                 }
             }
-
-        } else {
-            int targetFarm = target[1];
-            gameInfo.playerList[targetPlayer].farm[targetFarm].resetFarm();
         }
-        return new Package(-1, ACTION.DATA_UPDATE, 0, 0, false, gameInfo);
+        pkg.playerData = gameInfo.playerList;
+        NetworkMenager.sendingQueue.Enqueue(pkg);
+    }
+
+    public bool isNegative(int power) {
+        return true;
     }
 }
