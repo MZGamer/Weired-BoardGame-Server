@@ -14,7 +14,6 @@ public class packageUnpacker : MonoBehaviour
     public EventCard eventCard;
     public List<Package> pkgQueueView = new List<Package>();
     public static Queue<Package> pkgQueue = new Queue<Package>();
-    public int turn = 0;
 
     public const int BILL = 2;
     public bool askForCounter = false;
@@ -46,6 +45,7 @@ public class packageUnpacker : MonoBehaviour
     }
     void gameInit() {
         gameData.playerList = new playerStatus[0];
+        gameData.turn = 0;
         gameData.cardList = cardList;
         gameData.eventCard = eventCard;
         gameData.actionCardDeck = new Stack<int>();
@@ -77,7 +77,7 @@ public class packageUnpacker : MonoBehaviour
                     gameData.playerList[package.index] = DisconnectPlayer;
                     package.playerData = gameData.playerList;
                     NetworkMenager.sendingQueue.Enqueue(package);
-                    if(NetworkMenager.gameStart && turn % gameData.playerList.Length == package.index) {
+                    if(NetworkMenager.gameStart && gameData.turn % gameData.playerList.Length == package.index) {
                         pkgQueue.Enqueue(new Package(-1, ACTION.NEXT_PLAYER, 0, 0, false, gameData.playerList));
                     }
                 }
@@ -108,15 +108,15 @@ public class packageUnpacker : MonoBehaviour
 
                 nextCard = gameData.FateCardDeck.Pop();
                 rollPoint = UnityEngine.Random.Range(1, 6);
-                pkg = new Package(-1, ACTION.ROLL_POINT, rollPoint, new List<int> { turn % gameData.playerList.Length, nextCard });
+                pkg = new Package(-1, ACTION.ROLL_POINT, rollPoint, new List<int> { gameData.turn % gameData.playerList.Length, nextCard });
                 NetworkMenager.sendingQueue.Enqueue(pkg);
                 waitForRoll = pkg;
                 break;
             case ACTION.NEXT_PLAYER:
-                turn++;
+                gameData.turn++;
                 nextCard = 0;
                 //如果turn數到達，開啟一個新Turn
-                if (turn != 0 && turn % gameData.playerList.Length == 0)
+                if (gameData.turn != 0 && gameData.turn % gameData.playerList.Length == 0)
                 {
                     //將每人個別稅率放入Target回傳(因為我懶)
                     List<int> bill = new List<int>();
@@ -172,7 +172,7 @@ public class packageUnpacker : MonoBehaviour
                 pkg = new Package(-1, ACTION.NEXT_PLAYER, 0, 0, false, gameData.playerList);
                 NetworkMenager.sendingQueue.Enqueue(pkg);
 
-                if (gameData.playerList[turn % gameData.playerList.Length].name == "Disconnected") {
+                if (gameData.playerList[gameData.turn % gameData.playerList.Length].name == "Disconnected") {
                     pkgQueue.Enqueue(new Package(-1, ACTION.NEXT_PLAYER, 0, 0, false, gameData.playerList));
                     return;
                 }
@@ -183,7 +183,7 @@ public class packageUnpacker : MonoBehaviour
                 }
                 nextCard = gameData.FateCardDeck.Pop();
                 rollPoint = UnityEngine.Random.Range(1, 6);
-                pkg = new Package(-1, ACTION.ROLL_POINT, rollPoint, new List<int> { turn % gameData.playerList.Length, nextCard });
+                pkg = new Package(-1, ACTION.ROLL_POINT, rollPoint, new List<int> { gameData.turn % gameData.playerList.Length, nextCard });
                 NetworkMenager.sendingQueue.Enqueue(pkg);
                 waitForRoll = pkg;
                 break;
@@ -222,9 +222,9 @@ public class packageUnpacker : MonoBehaviour
                 break;
 
             case ACTION.GET_NEW_CARD:
-                turn = turn % gameData.playerList.Length;
+                gameData.turn = gameData.turn % gameData.playerList.Length;
                 int actionCard = 0 ;
-                if (turn == package.src)
+                if (gameData.turn == package.src)
                 {
                     if (gameData.actionCardDeck.Count == 0)
                     {
@@ -242,8 +242,8 @@ public class packageUnpacker : MonoBehaviour
                 break;
 
             case ACTION.HARVEST:
-                turn = turn % gameData.playerList.Length;
-                if(turn == package.src)
+                gameData.turn = gameData.turn % gameData.playerList.Length;
+                if(gameData.turn == package.src)
                 {
                     gameData.playerList[package.src].money += FarmManager.getReward(ref gameData, ref gameData.playerList[package.src].farm[package.target[0]]) + gameData.playerList[package.src].effect[(int)EFFECT_ID.HARVEST_RATIO];
                     FarmManager.resetFarm(ref gameData.playerList[package.src].farm[package.target[0]]);
@@ -272,6 +272,7 @@ public class packageUnpacker : MonoBehaviour
     }
 
     void cardActionExecute(Package pkg, powerCard activatedCard, roll? roll = null) {
+        //被詢問是否要打防禦卡時，如果有打出防禦卡，將等待是否防禦的卡片消除(不發動)
         if (activatedCard.powerInfo.Action ==  CARD_ACTION.DEFEND) {
             askForCounter = false;
             waitForCounter = null;
@@ -280,6 +281,7 @@ public class packageUnpacker : MonoBehaviour
             return;
         }
 
+        //處理target
         List<int> targetlistPrepare = new List<int>();
         List<int> targetlist= new List<int>();
         if (pkg.target[0] == 5) {
@@ -289,6 +291,8 @@ public class packageUnpacker : MonoBehaviour
         } else {
             targetlistPrepare.Add(pkg.target[0]);
         }
+
+        //拿取要使用的action，如果是Event卡依照roll決定發動效果，否則直接讀卡片資料
         CARD_ACTION act;
         if(roll == null) {
             act = activatedCard.powerInfo.Action;
@@ -297,12 +301,15 @@ public class packageUnpacker : MonoBehaviour
         }
         if (actionMap.TryGetValue(act, out Type type)) {
             actionExecuter action = (actionExecuter)Activator.CreateInstance(type);
+            //特定的情況下，檢查是否有無敵或是要詢問是否要打防禦卡
             if (action.isNegative(activatedCard.powerInfo.actionPower)) {
                 foreach (int index in targetlistPrepare) {
                     if (gameData.playerList[index].name == "DisconnectPlayer")
                         continue;
                     if (GuardedChk(pkg, index))
                         continue;
+                    //防禦卡只會在被指定時才能打出，所以多人時canAskCounter(pkg)必定為False
+                    //當canAskCounter(pkg)為True時，本次執行必定空過，會將該package佔存，確定沒有防禦再執行
                     if (canAskCounter(pkg)) {
                         continue;
                     }
@@ -311,11 +318,13 @@ public class packageUnpacker : MonoBehaviour
             } else {
                 targetlist = targetlistPrepare;
             }
+
+            //特定卡片效果會使用兩個target欄
             if (pkg.target.Count == 2) {
                 targetlist.Add(pkg.target[1]);
             }
             askForCounter = false;
-            Debug.Log("owo");
+            //請確認executer執行完後有將pkg廣播以播放動畫
             action.execute(ref gameData, ref pkg, activatedCard.powerInfo.actionPower, targetlist, (int)activatedCard.powerInfo.effect);
             gameOverChk();
         }
@@ -484,10 +493,10 @@ public class packageUnpacker : MonoBehaviour
     }*/
     bool GuardedChk(Package pkg, int playerChk) {
         if (pkg.src != -1 && gameData.playerList[playerChk].effect[(int)EFFECT_ID.GUARD] >= 1) {
-            if (pkg.target[0] != 5) {
+            /*if (pkg.target[0] != 5) {
                 pkg.playerData = gameData.playerList;
                 NetworkMenager.sendingQueue.Enqueue(pkg);
-            }
+            }*/
             return true;
         }
         return false;
@@ -503,12 +512,13 @@ public class packageUnpacker : MonoBehaviour
         return false;
     }
 
+
     void askCounter(Package pkg) {
 
         askForCounter = true;
         if (pkg.target[0] != 5) {
             List<int> cardChk = gameData.playerList[pkg.target[0]].handCard;
-            Debug.Log(cardChk[0]);
+            //檢查玩家的手牌，有可以加無敵效果或是防禦的卡，就先將預計要發動的卡先佔存，詢問是否要發動防禦卡
             for (int i = 0; i < cardChk.Count; i++) {
                 powerCard card = (powerCard)DeckManager.searchCard(ref gameData, cardChk[i]);
                 if (card.powerInfo.Action == CARD_ACTION.DEFEND || card.powerInfo.effect == EFFECT_ID.GUARD) {

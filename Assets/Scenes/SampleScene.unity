@@ -1156,8 +1156,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a860fb897c767714486b874e129c9a8b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  online: 0
-  temp: 
   IPInput: {fileID: 834771513}
   IPInputObj: {fileID: 1167436834}
   PortInput: {fileID: 1018419462}
@@ -1536,7 +1534,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281479730
+    rgba: 4278190080
   m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -1814,57 +1812,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cardList: {fileID: 11400000, guid: a622912b2dd2cbe498dc51f19dacc670, type: 2}
-  eventCard:
-    Name: 
-    description: 
-    cardImg: {fileID: 0}
-    ID: 0
-    cardCount: 0
-    Action: 0
-    actionPower: 0
-    effect: 0
-    target: 0
-    selectType:
-      type: 0
-      targetCount: 0
-  player: []
-  turn: 0
   askForCounter: 0
   modifyEventCard: 0
   DisconnectPlayer:
     name: Disconnected
-    farm:
-    - Name: 
-      description: 
-      cardImg: {fileID: 0}
-      ID: 0
-      cardCount: 0
-      reward: 
-      turn: 0
-    - Name: 
-      description: 
-      cardImg: {fileID: 0}
-      ID: 0
-      cardCount: 0
-      reward: 
-      turn: 0
-    - Name: 
-      description: 
-      cardImg: {fileID: 0}
-      ID: 0
-      cardCount: 0
-      reward: 
-      turn: 0
-    - Name: 
-      description: 
-      cardImg: {fileID: 0}
-      ID: 0
-      cardCount: 0
-      reward: 
-      turn: 0
     handCard: 
-    money: 20
-    effect: 0000000000000000000000000000000000000000
+    money: 0
+    effect: 
 --- !u!4 &1265607291
 Transform:
   m_ObjectHideFlags: 0

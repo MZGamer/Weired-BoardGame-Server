@@ -4,6 +4,8 @@ using System;
 
 public struct gameInfo {
     public playerStatus[] playerList;
+    public int turn;
+
     public CardList cardList;
     public EventCard eventCard;
     public Stack<int> actionCardDeck;

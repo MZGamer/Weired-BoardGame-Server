@@ -69,9 +69,9 @@ public class PackageUnpackerTests
     {
         InvokePrivate(_sut, "Start");
 
-        Assert.That(_sut.gameData.actionCardDeck.Count, Is.GreaterThan(0));
-        Assert.That(_sut.gameData.FateCardDeck.Count, Is.GreaterThan(0));
-        Assert.That(_sut.gameData.EventCardDeck.Count, Is.GreaterThan(0));
+        Assert.That(_sut.gameData.actionCardDeck.Count, Is.EqualTo(2));
+        Assert.That(_sut.gameData.FateCardDeck.Count, Is.EqualTo(1));
+        Assert.That(_sut.gameData.EventCardDeck.Count, Is.EqualTo(1));
     }
     // Package處理
 
@@ -93,7 +93,7 @@ public class PackageUnpackerTests
         playerStatus newcomer = MakePlayer("P3", money: 10);
         Package pkg = new Package(src: 2, ACTION: ACTION.PLAYER_JOIN, index: 0, target: 0, askCounter: false, playerData: new playerStatus[1] { newcomer });
         packageUnpacker.pkgQueue.Enqueue(pkg);
-        Assert.That(packageUnpacker.pkgQueue.Count, Is.EqualTo(1));
+
         InvokePrivate(_sut, "Update");
         Assert.That(_sut.gameData.playerList.Count, Is.EqualTo(3));
         Assert.That(_sut.gameData.playerList[2].name, Is.EqualTo("P3"));
@@ -139,7 +139,7 @@ public class PackageUnpackerTests
     [Test]
     public void A_PlayerDisconnectedInHisTurn() {
         NetworkMenager.gameStart = true;
-        _sut.turn = 0;
+        _sut.gameData.turn = 0;
         Package pkg = new Package(src: -1, ACTION: ACTION.PLAYER_DISCONNECTED, index: 0, target: 0);
         packageUnpacker.pkgQueue.Enqueue(pkg);
         InvokePrivate(_sut, "Update");
@@ -209,7 +209,7 @@ public class PackageUnpackerTests
         _sut.gameData.EventCardDeck.Push(400); // 確保有牌可發
         InvokePrivate(_sut, "Update");
 
-        Assert.AreEqual(_sut.turn, 1);
+        Assert.AreEqual(_sut.gameData.turn, 1);
 
         Package pkgToTest;
         pkgToTest = NetworkMenager.sendingQueue.Dequeue();
@@ -235,7 +235,7 @@ public class PackageUnpackerTests
         _sut.gameData.playerList[0].farm[0] = new farmInfo(200, 0);
         _sut.gameData.playerList[0].farm[1] = new farmInfo(200, 4);
         _sut.gameData.playerList[1].effect[(int)EFFECT_ID.BILL_RATIO] = 2 ;
-        _sut.turn = 1;
+        _sut.gameData.turn = 1;
 
 
         int[] expectedArray = new int[Enum.GetNames(typeof(EFFECT_ID)).Length];
@@ -246,7 +246,7 @@ public class PackageUnpackerTests
         _sut.gameData.FateCardDeck.Push(300); // 確保有牌可發
         _sut.gameData.EventCardDeck.Push(400); // 確保有牌可發
         InvokePrivate(_sut, "Update");
-        Assert.AreEqual(2, _sut.turn);
+        Assert.AreEqual(2, _sut.gameData.turn);
         Assert.AreEqual(8, _sut.gameData.playerList[0].money);
         Assert.AreEqual(6, _sut.gameData.playerList[1].money);
         Assert.That(_sut.gameData.playerList.All(p => p.effect.SequenceEqual(expectedArray)), Is.True);
@@ -358,16 +358,15 @@ public class PackageUnpackerTests
     // GuardedChk()
     // -----------------------------
     [Test]
-    public void GuardedChk_WhenGuardEffectActive_ShouldReturnTrue_AndEnqueuePkgIfNotGlobal()
+    public void GuardedChk_WhenGuardEffectActive_ShouldReturnTrue()
     {
         _sut.gameData.playerList[1].effect[(int)EFFECT_ID.GUARD] = 1;
 
-        var pkg = new Package(src: 0, ACTION: ACTION.CARD_ACTIVE, index: 101, target: new List<int> { 1, 0 });
+        var pkg = new Package(src: 0, ACTION: ACTION.CARD_ACTIVE, index: 101, target: new List<int> {1});
 
         var guarded = (bool)InvokePrivate(_sut, "GuardedChk", pkg, 1);
 
         Assert.That(guarded, Is.True);
-        Assert.That(NetworkMenager.sendingQueue.Count, Is.EqualTo(1));
     }
 
     [Test]
@@ -380,7 +379,6 @@ public class PackageUnpackerTests
         var guarded = (bool)InvokePrivate(_sut, "GuardedChk", pkg, 1);
 
         Assert.That(guarded, Is.False);
-        Assert.That(NetworkMenager.sendingQueue.Count, Is.EqualTo(0));
     }
 
     // -----------------------------
@@ -401,6 +399,7 @@ public class PackageUnpackerTests
         var result = (bool)InvokePrivate(_sut, "canAskCounter", pkg);
 
         Assert.That(result, Is.True);
+        Assert.That(_sut.waitForCounter, Is.EqualTo(pkg));
         Assert.That(NetworkMenager.sendingQueue.Count, Is.EqualTo(1));
         var sent = NetworkMenager.sendingQueue.Dequeue();
         Assert.That(sent.askCounter, Is.True);

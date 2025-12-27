@@ -11,12 +11,15 @@ using UnityEngine.SceneManagement;
 using TMPro;
 
 public class NetworkMenager : MonoBehaviour {
+    const int BUFFERSIZE = 2048;
+    const int TIMEOUT = 1000;
+
     // Start is called before the first frame update
     Socket serverGateway = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
     Socket udpClient = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
     public List<Socket> playerSocket = new List<Socket>();
     public static Queue<Package> sendingQueue = new Queue<Package>();
-    private static byte[] result = new byte[2048];
+    private static byte[] result = new byte[BUFFERSIZE];
     bool online;
     string temp = "";
     public static bool gameOver = false;
@@ -85,14 +88,14 @@ public class NetworkMenager : MonoBehaviour {
             List<Socket> readlist = new List<Socket>();
             if(!gameStart) {
                 readlist.Add(serverGateway);
-                Socket.Select(readlist, null, null, 1000);
+                Socket.Select(readlist, null, null, TIMEOUT);
                 if (readlist.Count > 0) {
                     var receiveNumber = readlist[0].Accept();
                     Debug.Log(receiveNumber);
                     if (receiveNumber != null) {
 
                         if (playerSocket.Count < 4) {
-                            receiveNumber.ReceiveBufferSize = 2048;
+                            receiveNumber.ReceiveBufferSize = BUFFERSIZE;
                             int newPlayerID;
                             if (playerSocket.IndexOf(null) == -1) {
                                 newPlayerID = playerSocket.Count;
@@ -118,7 +121,7 @@ public class NetworkMenager : MonoBehaviour {
             if(readlist.Count == 0) {
                 return;
             }
-            Socket.Select(readlist, null, null, 1000);
+            Socket.Select(readlist, null, null, TIMEOUT);
             for (int i = 0; i < readlist.Count; i++) {
                 int receiveNumber = readlist[i].Receive(result);
                 if (receiveNumber == 0) {
@@ -178,7 +181,7 @@ public class NetworkMenager : MonoBehaviour {
 
         //IPEndPoint object will allow us to read datagrams sent from any source.
         EndPoint server = new IPEndPoint(IPAddress.Any, PORT+1) as EndPoint;
-        byte[] receiveBytes = new byte[2048];
+        byte[] receiveBytes = new byte[BUFFERSIZE];
         while (true) {
             try {
 
